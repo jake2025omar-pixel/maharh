@@ -1,0 +1,9 @@
+{
+  "name": "MAHARAH — منصة مهارة لتعلم الإنجليزية",
+  "description": "منصة مهارة التعليمية التفاعلية لتعلم اللغة الإنجليزية للمناهج اليمنية (حضرموت) والإنجليزية اليومية مع الرفيق الذكي جيميناي.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
+
