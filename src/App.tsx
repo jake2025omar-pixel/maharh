@@ -1,180 +1,215 @@
-import React, { useState } from 'react';
-import {
-  Menu,
-  Sparkles,
-  GraduationCap,
-  BookOpen,
-  Coffee,
-  Repeat,
-  Settings,
-  HelpCircle,
-  Home
-} from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Menu, User } from 'lucide-react';
 import { SessionProvider, useSession } from './context/SessionContext.tsx';
-import { SessionFlow } from './components/session/SessionFlow.tsx';
+import { WelcomeOnboarding } from './components/onboarding/WelcomeOnboarding.tsx';
+import { LearningHome } from './components/home/LearningHome.tsx';
+import { ActiveSessionView } from './components/session/ActiveSessionView.tsx';
 import { CurriculumViewer } from './components/curriculum/CurriculumViewer.tsx';
 import { EverydayViewer } from './components/everyday/EverydayViewer.tsx';
 import { ExerciseEngine } from './components/exercises/ExerciseEngine.tsx';
 import { PersonalizedReview } from './components/review/PersonalizedReview.tsx';
 import { SettingsView } from './components/settings/SettingsView.tsx';
 import { SideDrawer, ActiveTab } from './components/navigation/SideDrawer.tsx';
-import { CatCompanion } from './components/companion/CatCompanion.tsx';
+import { AssistantPage } from './components/assistant/AssistantPage.tsx';
+import { AuthModal } from './components/auth/AuthModal.tsx';
 import { SentenceItem } from './data/curriculumData.ts';
 
+function getInitialTabFromUrl(): ActiveTab {
+  if (typeof window !== 'undefined' && window.location.pathname === '/assistant') {
+    return 'assistant';
+  }
+  return 'home';
+}
+
 function AppContent() {
-  const [activeTab, setActiveTab] = useState<ActiveTab>('home');
+  const {
+    hasCompletedOnboarding,
+    currentUser,
+    isSessionActive,
+    selectedLesson
+  } = useSession();
+
+  const [activeTab, setActiveTab] = useState<ActiveTab>(getInitialTabFromUrl);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [isCompanionOpen, setIsCompanionOpen] = useState(false);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [activeSentence, setActiveSentence] = useState<SentenceItem | null>(null);
 
-  const handleOpenCompanion = () => {
-    setIsCompanionOpen(true);
+  const navigateTo = (tab: ActiveTab) => {
+    setActiveTab(tab);
+    const targetPath = tab === 'assistant' ? '/assistant' : '/';
+    if (typeof window !== 'undefined' && window.location.pathname !== targetPath) {
+      window.history.pushState({ tab }, '', targetPath);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  useEffect(() => {
+    const handlePopState = () => {
+      setActiveTab(getInitialTabFromUrl());
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const handleOpenAssistant = (sentence?: SentenceItem) => {
+    setActiveSentence(sentence ?? null);
+    navigateTo('assistant');
+  };
+
+  // Show welcome onboarding ONLY on first visit (or when replayed from settings),
+  // unless user navigated directly to /assistant
+  if (!hasCompletedOnboarding && activeTab !== 'assistant') {
+    return <WelcomeOnboarding />;
+  }
+
   return (
-    <div className="min-h-screen bg-[#fdfcfb] text-stone-900 flex flex-col font-sans" dir="rtl">
-      {/* Top Bar Contract: 3 Zones: Brand — Nav Links — 1 Primary Action */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-stone-200/80 px-4 sm:px-8 py-3.5 flex items-center justify-between gap-8">
-        {/* Zone 1: Single text element wordmark */}
+    <div className="min-h-screen bg-white text-slate-900 flex flex-col font-sans" dir="rtl">
+      {/* Top Bar Contract: 3 Zones: Brand — Nav Links — Primary Account & Menu */}
+      <header className="sticky top-0 z-40 glass-nav px-4 sm:px-8 py-3.5 flex items-center justify-between gap-6">
+        {/* Zone 1: Brand Wordmark */}
         <button
-          onClick={() => setActiveTab('home')}
-          className="text-lg sm:text-xl font-extrabold tracking-tight text-stone-900 whitespace-nowrap shrink-0 flex items-center gap-2 hover:opacity-85 transition-opacity"
+          type="button"
+          onClick={() => navigateTo('home')}
+          className="text-base sm:text-lg font-bold tracking-tight text-slate-900 whitespace-nowrap shrink-0 hover:opacity-80 transition-opacity"
         >
-          <span className="w-8 h-8 rounded-lg bg-amber-600 text-white flex items-center justify-center text-sm font-extrabold">
-            م
-          </span>
-          <span>MAHARAH | مهارة</span>
+          MAHARAH · مهارة
         </button>
 
-        {/* Zone 2: Clean single-line nav links with subtle hover underlines */}
-        <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-stone-600">
-          <button
-            onClick={() => setActiveTab('home')}
-            className={`hover:text-stone-900 transition-colors whitespace-nowrap shrink-0 py-1 ${
-              activeTab === 'home' ? 'text-amber-800 font-bold border-b-2 border-amber-600' : ''
-            }`}
-          >
-            الرئيسية
-          </button>
-          <button
-            onClick={() => setActiveTab('curriculum')}
-            className={`hover:text-stone-900 transition-colors whitespace-nowrap shrink-0 py-1 ${
-              activeTab === 'curriculum' ? 'text-amber-800 font-bold border-b-2 border-amber-600' : ''
-            }`}
-          >
-            منهج حضرموت (الصف 11)
-          </button>
-          <button
-            onClick={() => setActiveTab('everyday')}
-            className={`hover:text-stone-900 transition-colors whitespace-nowrap shrink-0 py-1 ${
-              activeTab === 'everyday' ? 'text-amber-800 font-bold border-b-2 border-amber-600' : ''
-            }`}
-          >
-            الإنجليزية اليومية
-          </button>
-          <button
-            onClick={() => setActiveTab('exercises')}
-            className={`hover:text-stone-900 transition-colors whitespace-nowrap shrink-0 py-1 ${
-              activeTab === 'exercises' ? 'text-amber-800 font-bold border-b-2 border-amber-600' : ''
-            }`}
-          >
-            التمارين التفاعلية
-          </button>
-          <button
-            onClick={() => setActiveTab('review')}
-            className={`hover:text-stone-900 transition-colors whitespace-nowrap shrink-0 py-1 ${
-              activeTab === 'review' ? 'text-amber-800 font-bold border-b-2 border-amber-600' : ''
-            }`}
-          >
-            المراجعة المخصصة
-          </button>
+        {/* Zone 2: Clean Single-Line Nav Links */}
+        <nav className="hidden lg:flex items-center gap-6 text-sm font-medium text-slate-600">
+          {[
+            { id: 'home' as ActiveTab, label: 'الرئيسية' },
+            { id: 'curriculum' as ActiveTab, label: 'منهج حضرموت' },
+            { id: 'everyday' as ActiveTab, label: 'الإنجليزية اليومية' },
+            { id: 'exercises' as ActiveTab, label: 'التمارين' },
+            { id: 'review' as ActiveTab, label: 'المراجعة' },
+            { id: 'assistant' as ActiveTab, label: 'المساعد الذكي' }
+          ].map(item => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => (item.id === 'assistant' ? handleOpenAssistant() : navigateTo(item.id))}
+              className={`py-1 whitespace-nowrap shrink-0 transition-colors border-b-2 ${
+                activeTab === item.id
+                  ? 'text-slate-900 font-semibold border-sky-600'
+                  : 'border-transparent hover:text-slate-900 hover:border-slate-200'
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
         </nav>
 
-        {/* Zone 3: 1 primary action (or menu trigger) */}
+        {/* Zone 3: Auth CTA + Drawer Menu Trigger */}
         <div className="flex items-center gap-2.5 shrink-0">
           <button
-            onClick={() => setIsCompanionOpen(true)}
-            className="hidden sm:flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-stone-900 bg-amber-100 hover:bg-amber-200 rounded-xl transition-colors whitespace-nowrap shrink-0 border border-amber-300/80"
+            type="button"
+            onClick={() => setIsAuthOpen(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#F0F7FA] hover:bg-sky-100 text-slate-900 text-xs font-semibold transition-colors whitespace-nowrap shrink-0"
           >
-            <Sparkles className="w-3.5 h-3.5 text-amber-700" />
-            <span>اسأل فرهود 🐱</span>
+            <User className="w-3.5 h-3.5 text-sky-700" />
+            <span>{currentUser ? currentUser.fullName.split(' ')[0] : 'حساب الطالب'}</span>
           </button>
 
           <button
+            type="button"
             onClick={() => setIsDrawerOpen(true)}
-            aria-label="فتح القائمة الجانبية"
-            className="p-2 text-stone-700 hover:text-stone-900 hover:bg-stone-100 rounded-xl transition-colors flex items-center gap-1.5"
+            aria-label="فتح القائمة"
+            className="p-2 text-slate-700 hover:text-slate-900 hover:bg-[#F0F7FA] rounded-xl transition-colors flex items-center gap-1.5"
           >
             <Menu className="w-5 h-5" />
-            <span className="text-xs font-semibold hidden sm:inline">القائمة</span>
+            <span className="text-xs font-medium hidden sm:inline">القائمة</span>
           </button>
         </div>
       </header>
 
-      {/* Main Content Body */}
-      <main className="flex-1 pb-16">
-        {activeTab === 'home' && (
-          <SessionFlow
-            onOpenCompanion={handleOpenCompanion}
-            onSentenceSelected={setActiveSentence}
-          />
-        )}
+      {/* Main Content */}
+      <main className="flex-1">
+        {activeTab === 'home' &&
+          (isSessionActive ? (
+            <ActiveSessionView
+              onOpenAssistantWithContext={sentence => handleOpenAssistant(sentence)}
+              onSessionExit={() => navigateTo('home')}
+            />
+          ) : (
+            <LearningHome
+              onStartActiveSession={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              onSentenceSelected={s => setActiveSentence(s)}
+            />
+          ))}
+
         {activeTab === 'curriculum' && (
-          <CurriculumViewer
-            onOpenCompanion={handleOpenCompanion}
-            onSentenceSelected={setActiveSentence}
-          />
+          <CurriculumViewer onOpenAssistant={handleOpenAssistant} />
         )}
+
         {activeTab === 'everyday' && (
-          <EverydayViewer
-            onOpenCompanion={handleOpenCompanion}
-            onSentenceSelected={setActiveSentence}
+          <EverydayViewer onOpenAssistant={handleOpenAssistant} />
+        )}
+
+        {activeTab === 'exercises' && (
+          <ExerciseEngine onOpenAssistant={handleOpenAssistant} />
+        )}
+
+        {activeTab === 'review' && (
+          <PersonalizedReview onOpenAssistant={handleOpenAssistant} />
+        )}
+
+        {activeTab === 'assistant' && (
+          <AssistantPage
+            lessonContextSentence={activeSentence}
+            lessonTitleAr={selectedLesson?.titleAr}
+            onBackToLearning={() => navigateTo('home')}
           />
         )}
-        {activeTab === 'exercises' && (
-          <ExerciseEngine onOpenCompanion={handleOpenCompanion} />
-        )}
-        {activeTab === 'review' && (
-          <PersonalizedReview onOpenCompanion={handleOpenCompanion} />
-        )}
+
         {activeTab === 'settings' && <SettingsView />}
       </main>
 
-      {/* Hidden Side Navigation Drawer */}
+      {/* Slide-out Navigation Drawer */}
       <SideDrawer
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
         activeTab={activeTab}
-        onSelectTab={setActiveTab}
-        onOpenCompanion={handleOpenCompanion}
+        onSelectTab={tab => (tab === 'assistant' ? handleOpenAssistant() : navigateTo(tab))}
+        onOpenAuth={() => setIsAuthOpen(true)}
       />
 
-      {/* Independent 2D Cat Companion */}
-      <CatCompanion
-        currentSentence={activeSentence}
-        isOpen={isCompanionOpen}
-        onToggle={() => setIsCompanionOpen(prev => !prev)}
-      />
+      {/* Student Auth Modal */}
+      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
 
       {/* Minimal Footer */}
-      <footer className="border-t border-stone-200/60 py-6 px-4 text-center text-xs text-stone-400 bg-white/50">
-        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p>© 2026 MAHARAH (مهارة) — منصة تعليم الإنجليزية الرسمية لطلاب حضرموت والإنجليزية اليومية.</p>
-          <div className="flex items-center gap-4 text-stone-500">
-            <button onClick={() => setActiveTab('settings')} className="hover:text-stone-800">
-              الإعدادات
-            </button>
-            <span>•</span>
-            <button onClick={() => setActiveTab('curriculum')} className="hover:text-stone-800">
-              كتيّب المنهج
-            </button>
-            <span>•</span>
-            <button onClick={handleOpenCompanion} className="hover:text-stone-800">
-              رفيق مهارة الذكي
-            </button>
+      {activeTab !== 'assistant' && (
+        <footer className="border-t border-slate-100 py-6 px-4 text-center text-xs text-slate-400 bg-white">
+          <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p>© 2026 MAHARAH · مهارة — منصة تعلم الإنجليزية لطلاب حضرموت والإنجليزية اليومية</p>
+            <div className="flex items-center gap-4 text-slate-500">
+              <button
+                type="button"
+                onClick={() => navigateTo('curriculum')}
+                className="hover:text-slate-900"
+              >
+                منهج حضرموت
+              </button>
+              <span aria-hidden="true">·</span>
+              <button
+                type="button"
+                onClick={() => handleOpenAssistant()}
+                className="hover:text-slate-900"
+              >
+                المساعد الذكي
+              </button>
+              <span aria-hidden="true">·</span>
+              <button
+                type="button"
+                onClick={() => navigateTo('settings')}
+                className="hover:text-slate-900"
+              >
+                الإعدادات
+              </button>
+            </div>
           </div>
-        </div>
-      </footer>
+        </footer>
+      )}
     </div>
   );
 }

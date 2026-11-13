@@ -3,16 +3,14 @@ import {
   X,
   Home,
   BookMarked,
-  MessageSquare,
   Sparkles,
   Repeat,
   Settings,
-  HelpCircle,
-  Clock,
-  Layers,
-  GraduationCap
+  GraduationCap,
+  Bot
 } from 'lucide-react';
 import { useSession } from '../../context/SessionContext.tsx';
+import { HADRAMOUT_CURRICULUM_TOPICS } from '../../data/curriculumData.ts';
 
 export type ActiveTab =
   | 'home'
@@ -20,6 +18,7 @@ export type ActiveTab =
   | 'everyday'
   | 'exercises'
   | 'review'
+  | 'assistant'
   | 'settings';
 
 interface SideDrawerProps {
@@ -27,7 +26,7 @@ interface SideDrawerProps {
   onClose: () => void;
   activeTab: ActiveTab;
   onSelectTab: (tab: ActiveTab) => void;
-  onOpenCompanion: () => void;
+  onOpenAuth: () => void;
 }
 
 export const SideDrawer: React.FC<SideDrawerProps> = ({
@@ -35,55 +34,51 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
   onClose,
   activeTab,
   onSelectTab,
-  onOpenCompanion
+  onOpenAuth
 }) => {
-  const { progress } = useSession();
+  const { progress, currentUser } = useSession();
 
   const navItems = [
     {
       id: 'home' as ActiveTab,
-      labelAr: 'الرئيسية وجلسة التعلم',
-      labelEn: 'Home & Learning Sessions',
-      descAr: 'بدء الجلسة الذكية وتقسيم الوقت إلى أربعة أرباع متكافئة',
+      labelAr: 'الرئيسية وجلسات التعلم',
+      descAr: 'اختيار الدرس وتحديد المدة وإدارة الأنشطة التفاعلية',
       icon: Home
     },
     {
       id: 'curriculum' as ActiveTab,
       labelAr: 'مقرر حضرموت (الصف 11)',
-      labelEn: 'Yemeni Curriculum (Hadramout)',
-      descAr: 'كتيّب المراجعة الشاملة لجميع وحدات وقواعد الصف الحادي عشر',
-      icon: GraduationCap,
-      badge: '12 وحدة'
+      descAr: `كتيّب المراجعة الشاملة — ${HADRAMOUT_CURRICULUM_TOPICS.length} قسماً تعليمياً`,
+      icon: GraduationCap
     },
     {
       id: 'everyday' as ActiveTab,
-      labelAr: 'الإنجليزية اليومية الحياتية',
-      labelEn: 'Practical Everyday English',
-      descAr: 'محادثات طبيعية، مواقف السفر، التسوق، والتعاملات الحقيقية',
-      icon: BookMarked,
-      badge: 'مكتبة حية'
+      labelAr: 'الإنجليزية اليومية',
+      descAr: 'جمل ومواقف واقعية متدرجة عبر المستويات الثلاثة',
+      icon: BookMarked
     },
     {
       id: 'exercises' as ActiveTab,
-      labelAr: 'محرك التمارين التفاعلية',
-      labelEn: 'Interactive Exercises Hub',
-      descAr: '15 نمط تمرين تفاعلي (توصيل، تهجئة، إعادة ترتيب، استماع ونطق)',
-      icon: Sparkles,
-      badge: `${progress.totalExercisesCompleted} محلولة`
+      labelAr: 'التمارين التفاعلية',
+      descAr: `${progress.totalExercisesCompleted} تمرين منجز عبر أنماط متعددة`,
+      icon: Sparkles
     },
     {
       id: 'review' as ActiveTab,
       labelAr: 'المراجعة المخصصة',
-      labelEn: 'Personalized Review Deck',
-      descAr: 'مراجعة الجمل والأخطاء التي تحتاج إلى تثبيت بالتكرار المتباعد',
-      icon: Repeat,
-      badge: `${progress.reviewDeck.filter(r => !r.mastered).length} للمراجعة`
+      descAr: `${progress.reviewDeck.filter(r => !r.mastered).length} جملة تحتاج للمراجعة · ${progress.savedSentenceIds.length} محفوظة`,
+      icon: Repeat
+    },
+    {
+      id: 'assistant' as ActiveTab,
+      labelAr: 'المساعد الذكي',
+      descAr: 'اكتب سؤالك في حقل الإدخال ويجيبك المساعد صوتياً مباشرة',
+      icon: Bot
     },
     {
       id: 'settings' as ActiveTab,
       labelAr: 'الإعدادات والمستوى',
-      labelEn: 'Settings & Preferences',
-      descAr: 'تحديد المستوى (مبتدئ، متوسط، متقدم) وتهيئة مفتاح جيميناي',
+      descAr: 'تخصيص مستوى التعلم وإعادة عرض شاشة الترحيب',
       icon: Settings
     }
   ];
@@ -92,40 +87,58 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden" dir="rtl">
-      {/* Backdrop */}
       <div
         onClick={onClose}
-        className="absolute inset-0 bg-stone-900/40 backdrop-blur-xs transition-opacity"
+        className="absolute inset-0 bg-slate-900/35 backdrop-blur-xs transition-opacity"
       />
 
-      {/* Drawer Container (Slides from right in Arabic RTL) */}
       <div className="absolute inset-y-0 right-0 max-w-full flex pl-10">
-        <div className="w-screen max-w-sm bg-white shadow-2xl border-l border-stone-200 flex flex-col">
+        <div className="w-screen max-w-sm bg-white shadow-xl border-l border-slate-200 flex flex-col">
           {/* Header */}
-          <div className="p-6 border-b border-stone-100 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center text-amber-900 font-extrabold text-lg">
-                م
-              </div>
-              <div>
-                <h2 className="font-extrabold text-stone-900 text-lg tracking-tight">MAHARAH | مهارة</h2>
-                <p className="text-xs text-stone-500">منصة تعلم الإنجليزية الذكية</p>
-              </div>
+          <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+            <div>
+              <h2 className="font-bold text-slate-900 text-lg tracking-tight">
+                MAHARAH · مهارة
+              </h2>
+              <p className="text-xs text-slate-500">منصة تعلم الإنجليزية</p>
             </div>
             <button
+              type="button"
               onClick={onClose}
-              className="p-2 text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-xl transition-colors"
+              className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
-          {/* Current Level Pill */}
-          <div className="px-6 py-3 bg-stone-50 border-b border-stone-100 flex items-center justify-between text-xs text-stone-600">
-            <span>المستوى الدراسي المعتمد:</span>
-            <span className="font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full">
-              {progress.level === 'beginner' ? 'مبتدئ' : progress.level === 'intermediate' ? 'متوسط' : 'متقدم'}
-            </span>
+          {/* Student Account Bar */}
+          <div className="px-6 py-3.5 bg-[#F0F7FA]/60 border-b border-sky-100 flex items-center justify-between gap-2">
+            <div className="min-w-0 text-right">
+              <p className="text-xs font-bold text-slate-900 truncate">
+                {currentUser ? currentUser.fullName : 'زائر'}
+              </p>
+              <p className="text-[11px] text-slate-500 truncate">
+                {currentUser
+                  ? currentUser.email
+                  : `المستوى: ${
+                      progress.level === 'beginner'
+                        ? 'مبتدئ'
+                        : progress.level === 'intermediate'
+                        ? 'متوسط'
+                        : 'متقدم'
+                    }`}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onOpenAuth();
+              }}
+              className="text-xs text-slate-900 bg-white hover:bg-sky-50 px-3 py-1.5 rounded-xl font-semibold border border-slate-200 transition-colors shrink-0"
+            >
+              {currentUser ? 'الحساب' : 'تسجيل الدخول'}
+            </button>
           </div>
 
           {/* Navigation Items */}
@@ -136,73 +149,39 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
               return (
                 <button
                   key={item.id}
+                  type="button"
                   onClick={() => {
                     onSelectTab(item.id);
                     onClose();
                   }}
-                  className={`w-full text-right p-3.5 rounded-2xl transition-all flex items-start gap-3.5 group ${
+                  className={`w-full text-right p-3.5 rounded-2xl transition-colors flex items-start gap-3.5 ${
                     isActive
-                      ? 'bg-stone-100 text-stone-900 shadow-2xs'
-                      : 'hover:bg-stone-50 text-stone-600 hover:text-stone-900'
+                      ? 'bg-[#F0F7FA] text-slate-900 border border-sky-200/70'
+                      : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   <div
-                    className={`p-2.5 rounded-xl shrink-0 transition-colors ${
-                      isActive ? 'bg-amber-600 text-white shadow-xs' : 'bg-stone-100 text-stone-600 group-hover:bg-amber-100 group-hover:text-amber-800'
+                    className={`p-2 rounded-xl shrink-0 ${
+                      isActive ? 'bg-slate-900 text-white' : 'bg-[#F0F7FA] text-sky-700'
                     }`}
                   >
-                    <Icon className="w-5 h-5" />
+                    <Icon className="w-4 h-4" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-1">
-                      <p className={`font-bold text-sm ${isActive ? 'text-stone-900' : 'text-stone-800'}`}>
-                        {item.labelAr}
-                      </p>
-                      {item.badge && (
-                        <span className="text-[10px] px-2 py-0.5 rounded-md bg-stone-200/80 text-stone-700 font-medium">
-                          {item.badge}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-stone-500 mt-0.5 line-clamp-2 leading-relaxed">
+                    <p className="font-bold text-sm text-slate-900">{item.labelAr}</p>
+                    <p className="text-xs text-slate-500 mt-0.5 line-clamp-2 leading-relaxed">
                       {item.descAr}
                     </p>
                   </div>
                 </button>
               );
             })}
-
-            {/* Quick Action: Open Cat Companion */}
-            <div className="pt-4 mt-4 border-t border-stone-100">
-              <button
-                onClick={() => {
-                  onClose();
-                  onOpenCompanion();
-                }}
-                className="w-full p-4 rounded-2xl bg-stone-900 hover:bg-stone-800 text-white text-right flex items-center justify-between gap-3 shadow-md transition-all active:scale-98"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full overflow-hidden bg-amber-100 ring-2 ring-amber-400 shrink-0">
-                    <img
-                      src="/src/assets/images/cat_companion_fullbody_1794437148306.jpg"
-                      alt="فرهود"
-                      className="w-full h-full object-cover object-top"
-                    />
-                  </div>
-                  <div>
-                    <p className="font-bold text-sm text-stone-100">فرهود — الرفيق الذكي</p>
-                    <p className="text-xs text-amber-200">محادثة وتوضيح فوري</p>
-                  </div>
-                </div>
-                <Sparkles className="w-5 h-5 text-amber-400" />
-              </button>
-            </div>
           </div>
 
-          {/* Footer Info */}
-          <div className="p-4 border-t border-stone-100 bg-stone-50/50 text-center">
-            <p className="text-[11px] text-stone-400">
-              MAHARAH 3.0 • منهج حضرموت والإنجليزية اليومية
+          {/* Footer */}
+          <div className="p-4 border-t border-slate-100 text-center">
+            <p className="text-[11px] text-slate-400">
+              MAHARAH · منهج حضرموت والإنجليزية اليومية
             </p>
           </div>
         </div>

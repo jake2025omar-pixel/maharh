@@ -1,0 +1,999 @@
+MAHARAH 4.0 — Premium AI-Powered English Learning Platform
+
+ROLE AND EXPECTED ENGINEERING EXPERTISE
+
+Act as a world-class Principal Software Architect, Senior Full-Stack Engineer, AI Engineer, Speech Technology Engineer, Product Designer, and Educational Technology Specialist.
+
+Approach this project with the engineering judgment and experience expected from an engineer with 30 years of professional software development experience.
+
+You are building a real educational product, not a visual demonstration.
+
+Your priorities are:
+
+1. Exceptional user experience.
+2. Premium visual design.
+3. Simplicity and clarity.
+4. Real educational functionality.
+5. Reliable AI integration.
+6. Real speech recognition and pronunciation assessment.
+7. Secure backend architecture.
+8. Persistent real student data.
+9. Maintainable and scalable implementation.
+
+Do not sacrifice functionality for appearance or appearance for unnecessary technical complexity.
+
+---
+
+1. PROJECT IDENTITY
+
+Project name: MAHARAH (مهارة).
+
+MAHARAH is an English-learning platform designed primarily for Arabic-speaking students.
+
+It combines:
+
+- Official Yemeni curriculum learning.
+- Practical Everyday English.
+- Interactive learning activities.
+- Real speech and pronunciation practice.
+- A separate Gemini-powered AI companion.
+
+Arabic is the default interface language.
+
+Support Arabic RTL and English LTR correctly.
+
+Use MAHARAH branding consistently throughout the application.
+
+---
+
+2. FIRST: AUDIT THE EXISTING REPOSITORY
+
+Before implementing anything:
+
+- Inspect the connected GitHub repository.
+- Understand the existing application and its framework.
+- Inspect all existing files and dependencies.
+- Identify existing working functionality.
+- Preserve useful code and content.
+- Identify missing resources.
+- Avoid unnecessary rewrites.
+- Do not create duplicate components or services.
+- Do not assume previous conversations or repositories are accessible.
+
+The actual repository is the source of truth for the existing application.
+
+The actual uploaded PDF is the source of truth for official lessons.
+
+If the PDF is missing, request it.
+
+Never invent lessons or claim that content has been extracted from a document that is unavailable.
+
+---
+
+3. VISUAL DESIGN — PREMIUM APPLE-INSPIRED EXPERIENCE
+
+This is a critical requirement.
+
+Redesign the application with the visual quality, refinement, simplicity, and attention to detail associated with premium Apple products and Apple's high-end digital experiences.
+
+Do not copy Apple's website or reproduce its branding.
+
+Create an original MAHARAH visual identity inspired by the following principles:
+
+- Extreme visual simplicity.
+- Beautiful typography.
+- Spacious layouts.
+- Precise alignment.
+- Elegant proportions.
+- Refined transitions.
+- Subtle depth.
+- High-quality glassmorphism.
+- Minimal but meaningful visual elements.
+- Excellent mobile responsiveness.
+
+Color system
+
+Use only a restrained primary palette:
+
+Primary color:
+Pure white.
+
+Secondary color:
+Very light icy blue / snow-white.
+
+Suggested secondary color: #F0F7FA.
+
+Use subtle neutral text colors for readability.
+
+Avoid introducing unnecessary accent colors.
+
+Glass design
+
+Use refined glassmorphism for selected elements:
+
+- Translucent glass panels.
+- Subtle backdrop blur.
+- Delicate borders.
+- Soft shadows.
+- Carefully controlled transparency.
+- Smooth layered depth.
+
+Glass effects must remain subtle and readable.
+
+Do not make every element transparent.
+
+Avoid excessive gradients, colorful borders, excessive shadows, and decorative clutter.
+
+Typography
+
+Use a modern, highly readable Arabic and Latin typography system.
+
+Arabic must look natural and properly aligned.
+
+Use a consistent typographic hierarchy.
+
+Headings should be clear, elegant, and not excessively large.
+
+Interface philosophy
+
+Every screen must have one clear primary purpose.
+
+Do not overwhelm the student with too many cards, statistics, menus, or controls.
+
+Do not create a complicated dashboard.
+
+Make the experience feel calm, premium, and intuitive.
+
+---
+
+4. FIRST-VISIT EXPERIENCE — WELCOME ONLY ONCE
+
+The welcome experience must appear only when a student enters MAHARAH for the first time.
+
+Do not show the welcome screen every time the student opens the website.
+
+Implement persistent onboarding state.
+
+For authenticated users, store the onboarding completion state in the database.
+
+For anonymous users, use appropriate persistent browser storage until account registration becomes available.
+
+First visit:
+
+1. Display a beautiful welcome screen.
+2. Introduce MAHARAH briefly.
+3. Explain that the platform helps the student learn through listening, writing, speaking, and interactive exercises.
+4. Display one clear action: "ابدأ التعلم".
+5. After the student completes onboarding, save that state.
+6. On future visits, skip the welcome screen and go directly to the learning home screen.
+
+Do not repeat onboarding unless the student explicitly requests to view it again.
+
+Do not confuse a normal returning visit with a first visit.
+
+---
+
+5. THE LEARNING HOME SCREEN
+
+After onboarding, the student should arrive at a simple learning interface.
+
+The main purpose of this screen is to help the student choose what to study.
+
+Display the available actual lessons extracted from the official PDF.
+
+Do not show fake lessons.
+
+Do not create invented course names.
+
+Organize the actual extracted PDF content into a clear and readable lesson-selection experience.
+
+Each lesson should display only useful information:
+
+- Actual lesson title.
+- Short description based on the document.
+- Learning status, if real progress exists.
+- Start lesson action.
+
+Allow the student to distinguish official curriculum lessons from supplementary Everyday English content.
+
+Keep the interface minimal.
+
+Do not place unnecessary statistics or decorative cards on the home screen.
+
+---
+
+6. OFFICIAL CURRICULUM — REAL PDF CONTENT
+
+The initial official learning source is:
+
+"English Course Comprehensive Review – Grade 11 – Yemeni Curriculum (Hadramout)"
+
+The actual PDF must be provided to the current project.
+
+Suggested repository location:
+
+content/official-curriculum/grade-11-hadramout.pdf
+
+If the file is not present, request it.
+
+Do not invent its contents.
+
+Extract the real topics, examples, exercises, and explanations.
+
+The known subject areas include:
+
+- School Subjects and Abbreviations.
+- Direct and Indirect Questions.
+- Order of Adjectives.
+- Passive Voice.
+- If-Conditionals.
+- Past Continuous and Past Perfect Connectors.
+- Services, Places and Goods.
+- Medical Terms and Health Proverbs.
+- Human Skeleton Facts.
+- How Science Helps the Police.
+- Prefixes and Word Derivatives.
+- Vocabulary, Synonyms and Antonyms.
+- Regular and Irregular Verbs.
+
+Verify these topics against the actual PDF before creating lessons.
+
+Preserve the source and educational meaning.
+
+Every English learning sentence must include an Arabic translation.
+
+Do not turn the curriculum into a list of isolated words.
+
+Teach vocabulary through complete sentences and real contexts.
+
+---
+
+7. LESSON SELECTION AND STUDY DURATION
+
+The correct student workflow is:
+
+STEP 1:
+The student enters the learning home screen.
+
+STEP 2:
+The student chooses one of the actual available lessons.
+
+STEP 3:
+The application displays a simple study-duration selection screen.
+
+Available durations:
+
+- 5 minutes.
+- 10 minutes.
+- 15 minutes.
+- 20 minutes.
+- 30 minutes.
+- 35 minutes.
+- 40 minutes.
+- 45 minutes.
+- 50 minutes.
+- 60 minutes.
+
+STEP 4:
+After choosing the duration, the application generates a structured study session.
+
+Do not immediately launch an exercise before the student has selected the duration.
+
+---
+
+8. INTELLIGENT STUDY SESSION DISTRIBUTION
+
+The selected study duration must be divided among multiple learning methods.
+
+Do not use only the previous fixed four-session structure.
+
+Build a flexible study-session engine that can distribute the available time among appropriate activities.
+
+Supported learning methods include:
+
+1. Listening.
+2. Reading and understanding sentences.
+3. Writing and spelling.
+4. Vocabulary learning through complete sentences.
+5. Choosing the correct word.
+6. Completing missing words.
+7. Matching words and meanings.
+8. Arranging words into correct sentences.
+9. Pronunciation practice.
+10. Speaking and answering questions.
+11. Translation.
+12. Grammar exercises in context.
+13. Listening and writing complete sentences.
+
+Choose relevant activities according to the selected lesson.
+
+For example, a grammar lesson should include grammar exercises and sentence construction.
+
+A pronunciation-focused activity should include listening and speaking.
+
+Do not force every activity into every lesson.
+
+Time calculation
+
+Allocate the selected study time across the selected learning activities.
+
+Use a configurable and transparent distribution algorithm.
+
+Ensure that the total allocated time equals the student's selected duration exactly.
+
+Distribute fractional minutes accurately using seconds.
+
+Display the planned activities and their durations before the session begins.
+
+The student must be able to understand what they will do during the session.
+
+Time expiration
+
+The timer is a guide, not a punishment.
+
+When an activity's recommended time ends:
+
+- Save progress.
+- Inform the student.
+- Allow the student to finish the current exercise.
+- Do not automatically discard answers.
+- Do not force the student to rush.
+- Do not mark unfinished work as complete.
+
+---
+
+9. SENTENCE-BASED LEARNING
+
+MAHARAH must teach English through complete sentences and meaningful contexts.
+
+Every English educational sentence must have an Arabic translation.
+
+Examples:
+
+English:
+"I would like to order a cup of coffee."
+
+Arabic:
+"أود طلب كوب من القهوة."
+
+English:
+"She has been studying English since morning."
+
+Arabic:
+"هي تدرس اللغة الإنجليزية منذ الصباح."
+
+Apply this rule throughout:
+
+- Lessons.
+- Reading.
+- Listening.
+- Speaking.
+- Writing.
+- Vocabulary.
+- Grammar.
+- Exercises.
+- AI-generated educational examples.
+- Review activities.
+
+When explaining a vocabulary word, show how it is used in a complete sentence.
+
+---
+
+10. EXERCISE ENGINE
+
+Create a real modular exercise system.
+
+Supported exercise types:
+
+- Listening and selecting the correct sentence.
+- Listening and writing what was heard.
+- Choosing the correct word.
+- Completing missing words.
+- Matching words with meanings using connecting lines.
+- Spelling words by selecting letters.
+- Arranging words into complete sentences.
+- Translating sentences from English to Arabic.
+- Translating sentences from Arabic to English.
+- Completing conversations.
+- Selecting the appropriate response.
+- Reading comprehension.
+- Grammar in context.
+- Speaking and pronunciation exercises.
+
+Each exercise must have:
+
+- Clear Arabic instructions.
+- Real educational content.
+- Correct answer validation.
+- Useful feedback.
+- Arabic translations.
+- Appropriate difficulty.
+- Progress persistence.
+
+Do not use fake answers or fabricated completion states.
+
+---
+
+11. REAL MICROPHONE AND SPEECH RECOGNITION
+
+This is a mandatory functional requirement.
+
+The microphone must actually work.
+
+Do not create a decorative microphone button.
+
+When the student presses the microphone button:
+
+1. Request microphone permission when necessary.
+2. Activate actual audio capture.
+3. Clearly show that recording is in progress.
+4. Allow the student to stop recording.
+5. Process the captured audio through a real supported speech-recognition or audio-analysis system.
+6. Convert the speech into recognized text when supported.
+7. Compare the recognized answer with the expected answer.
+8. Provide meaningful feedback.
+9. Save the actual attempt and result.
+
+Pronunciation assessment
+
+For pronunciation exercises, the system must:
+
+- Identify the expected English word or sentence.
+- Capture the student's actual spoken response.
+- Analyze the recognized words.
+- Compare them with the expected content.
+- Identify missing, incorrect, or unclear words where possible.
+- Explain pronunciation problems constructively.
+- Allow the student to try again.
+
+If phoneme-level pronunciation analysis is supported by the selected speech service, use it.
+
+Otherwise, do not pretend that word recognition alone provides precise phonetic scoring.
+
+Clearly distinguish speech-recognition confidence from pronunciation accuracy.
+
+Do not generate arbitrary pronunciation scores.
+
+Microphone interface
+
+The microphone button must be:
+
+- Clearly visible.
+- Easy to reach on mobile.
+- Large enough to tap.
+- Accompanied by recording status.
+- Equipped with permission and error states.
+
+Handle:
+
+- Microphone permission denial.
+- Unsupported browsers.
+- No microphone device.
+- Recording errors.
+- Network failures.
+- Speech recognition failures.
+
+Use secure HTTPS deployment because microphone access requires a secure browser context in normal production environments.
+
+---
+
+12. EVERYDAY ENGLISH LIBRARY
+
+Maintain a separate supplementary Everyday English collection.
+
+Include natural real-world communication:
+
+- Greetings.
+- Introductions.
+- Daily conversations.
+- Shopping.
+- Restaurants.
+- Travel.
+- Transportation.
+- Directions.
+- School and university.
+- Family and friendship.
+- Work.
+- Online communication.
+- Phone conversations.
+- Common expressions.
+- Polite requests.
+- Real-life situations.
+
+Keep this collection separate from the official PDF curriculum.
+
+Use three learning levels:
+
+- Beginner.
+- Intermediate.
+- Advanced.
+
+Every educational English sentence must include an Arabic translation.
+
+---
+
+13. THE CAT COMPANION — A COMPLETELY SEPARATE PAGE
+
+This requirement must be implemented exactly.
+
+The cat is NOT a floating window.
+
+The cat is NOT a small widget inside the learning dashboard.
+
+The cat must have its own independent page within MAHARAH.
+
+Create a dedicated route, for example:
+
+/assistant
+
+The student can navigate to this page through a clearly visible navigation option.
+
+The page must be designed as a complete AI companion experience.
+
+Visual identity
+
+Replace the previous full-body cat design.
+
+The new assistant avatar must be a simple circular face.
+
+It should contain only:
+
+- Two eyes.
+- One mouth.
+
+The avatar must not have:
+
+- A full body.
+- Arms.
+- Legs.
+- A tail.
+- Clothing.
+- A complex character illustration.
+
+The face should be minimal, clean, recognizable, and visually polished.
+
+Use a circular visual form with a restrained neutral design.
+
+Animation and interaction
+
+The face must be able to:
+
+- Blink naturally.
+- Move its mouth while speaking.
+- React visually when receiving a message.
+- Indicate that it is listening.
+- Indicate that it is processing a response.
+- Indicate that it is speaking.
+
+These are functional interface states, not emotional expressions.
+
+Do not give the assistant emotional behavior.
+
+Do not simulate sadness, anger, romantic attachment, jealousy, affection, or human emotional states.
+
+The character should remain neutral and informative.
+
+Independent assistant page layout
+
+The assistant page should contain:
+
+1. A prominent circular assistant avatar.
+2. A clear conversation area.
+3. Readable message bubbles.
+4. A text input.
+5. A send button.
+6. A microphone button.
+7. A voice playback control where appropriate.
+8. Conversation history.
+9. A new conversation action.
+10. A clear navigation action back to learning.
+
+The layout must remain minimal and responsive.
+
+On desktop, use available space intelligently.
+
+On mobile, make the conversation and input easy to use without crowding.
+
+The assistant page must not look like a complicated administration dashboard.
+
+---
+
+14. GEMINI — THE REAL BRAIN OF THE ASSISTANT
+
+Integrate Google Gemini API as the actual reasoning engine.
+
+The assistant must not depend on scripted answers.
+
+It must support natural conversations in Arabic and English.
+
+Important: The assistant is not restricted to English education
+
+The assistant must be able to answer questions outside the English-learning curriculum.
+
+Students may ask about:
+
+- Science.
+- Technology.
+- Mathematics.
+- General knowledge.
+- History.
+- Programming.
+- Daily life.
+- Language learning.
+- General educational questions.
+- Other ordinary topics.
+
+Do not block questions merely because they are unrelated to the current English lesson.
+
+The assistant should behave as a general-purpose AI assistant with additional educational context when relevant.
+
+When the student asks about English, use the curriculum and learning context where appropriate.
+
+When the student asks an unrelated question, answer it naturally without unnecessarily forcing the conversation back to English.
+
+Maintain appropriate safety boundaries and communicate uncertainty honestly.
+
+---
+
+15. CONTEXT-AWARE ASSISTANT
+
+When the student opens the assistant from a lesson, provide relevant context:
+
+- Current learning level.
+- Current lesson.
+- Current PDF topic.
+- Current English sentence.
+- Arabic translation.
+- Current exercise.
+- Relevant previous conversation.
+
+This context should help the assistant explain the material.
+
+However, the assistant must also support completely independent conversations.
+
+Do not force every conversation to be related to the current lesson.
+
+Allow the student to start a new conversation without lesson context.
+
+Do not send unnecessary personal student data to Gemini.
+
+Use conversation summarization or context management when necessary.
+
+---
+
+16. PDF KNOWLEDGE RETRIEVAL
+
+Connect the actual PDF to the assistant through a document retrieval system.
+
+Required implementation:
+
+1. Extract the real PDF text.
+2. Preserve page numbers and topic structure.
+3. Divide the document into meaningful chunks.
+4. Store searchable content.
+5. Implement semantic retrieval where appropriate.
+6. Retrieve relevant sections when the student asks curriculum-related questions.
+7. Supply relevant context to Gemini.
+8. Identify relevant PDF pages when possible.
+
+Clearly distinguish:
+
+- Actual PDF information.
+- Gemini-generated explanations.
+- External research.
+
+Never fabricate PDF quotations or page references.
+
+---
+
+17. INTERNET ACCESS AND EXTERNAL RESEARCH
+
+Allow the assistant to search the internet when necessary.
+
+Use a supported Gemini search-grounding integration or another real backend search provider.
+
+Search when:
+
+- The PDF does not contain the answer.
+- The internal library is insufficient.
+- The student requests current information.
+- The question requires external references.
+
+Use reliable sources.
+
+Display source references and clickable links when external information is used.
+
+Do not fabricate search results.
+
+If external search is unavailable, say so honestly.
+
+---
+
+18. GEMINI API SECURITY
+
+Prepare a secure backend integration.
+
+Use:
+
+GEMINI_API_KEY
+
+Requirements:
+
+- Keep the API key on the backend.
+- Never expose it in frontend JavaScript.
+- Never place it in public environment variables.
+- Never commit it to GitHub.
+- Use secure hosting secrets.
+- Provide ".env.example" with placeholder values only.
+- Validate incoming requests.
+- Implement rate limits.
+- Implement error handling.
+- Prevent duplicate requests.
+- Monitor API usage.
+- Keep the model configurable.
+- Use a currently supported Gemini model.
+
+The integration must be ready for me to supply the actual API key.
+
+If the key has not been configured, clearly identify the AI feature as awaiting configuration.
+
+Never simulate a successful Gemini connection.
+
+---
+
+19. VOICE RESPONSES
+
+The assistant should be able to speak its responses when voice output is enabled.
+
+Use a real supported text-to-speech service or a suitable browser speech capability.
+
+The assistant's circular face should move its mouth while audio is actually playing.
+
+Do not animate the mouth as though it is speaking when no audio is playing.
+
+Provide:
+
+- Play.
+- Pause.
+- Stop.
+- Replay.
+
+Handle unavailable voice services gracefully.
+
+---
+
+20. DATABASE AND REAL STUDENT DATA
+
+Use a real backend and persistent database.
+
+The architecture should support:
+
+- Student registration.
+- Login.
+- Student profiles.
+- Onboarding completion.
+- Selected lessons.
+- Learning sessions.
+- Exercise attempts.
+- Correct and incorrect answers.
+- Learning progress.
+- Saved sentences.
+- AI conversations.
+- Conversation history.
+
+Use appropriate access control and database security.
+
+Each student must only access their own private data.
+
+Use database-backed persistence.
+
+Do not use local storage as the only permanent record of learning progress.
+
+---
+
+21. ZERO FAKE DATA POLICY
+
+This is a strict requirement.
+
+Never create or display:
+
+- Fake student counts.
+- Fake online-user counts.
+- Fake points.
+- Fake achievements.
+- Fake rankings.
+- Fake events.
+- Fake notifications.
+- Fake reviews.
+- Fake completed lessons.
+- Fake test results.
+- Fake AI messages.
+- Fake progress statistics.
+- Fake activity feeds.
+
+Every displayed statistic must originate from actual verified database records.
+
+If there is no information, show a clear empty state.
+
+Do not use development test data in production.
+
+Do not simulate backend success.
+
+Every button must perform a real operation or be clearly disabled.
+
+Never report a successful operation before the backend confirms it.
+
+---
+
+22. REAL HOSTING AND DEPLOYMENT
+
+Prepare the project for real deployment using suitable free-tier services.
+
+A possible initial architecture:
+
+- Cloudflare Pages for frontend hosting.
+- Cloudflare Workers for backend API execution.
+- Supabase PostgreSQL for database and authentication.
+- Google Gemini API for AI functionality.
+
+Verify current free-tier limitations before selecting the final configuration.
+
+Do not promise unlimited free hosting.
+
+Implement:
+
+- Real frontend deployment.
+- Real backend endpoints.
+- Real database connection.
+- Secure secret configuration.
+- HTTPS.
+- Error monitoring.
+- Database backup considerations.
+- Deployment documentation.
+
+The application must accept real student interactions after deployment.
+
+Do not claim that the website is live until the actual deployment has been verified.
+
+---
+
+23. MOBILE-FIRST RESPONSIVENESS
+
+The application must work beautifully on:
+
+- Android phones.
+- Small mobile screens.
+- Tablets.
+- Desktop browsers.
+
+Prioritize the mobile experience.
+
+Ensure:
+
+- Large touch targets.
+- Readable typography.
+- Correct RTL layouts.
+- Responsive glass panels.
+- Easy microphone access.
+- Comfortable lesson reading.
+- Independent assistant page.
+- Smooth but restrained animations.
+
+Do not shrink the desktop interface until it fits mobile.
+
+Design appropriate responsive layouts.
+
+---
+
+24. TESTING AND QUALITY ASSURANCE
+
+Test actual functionality.
+
+Verify:
+
+1. First-visit onboarding appears only once.
+2. Returning students go directly to the learning home screen.
+3. Actual PDF lessons are extracted.
+4. Lesson selection works.
+5. Study-duration selection works.
+6. Activity distribution is calculated correctly.
+7. Every educational English sentence has an Arabic translation.
+8. Exercises validate actual answers.
+9. Microphone permission works.
+10. Actual speech is captured.
+11. Speech recognition works.
+12. Pronunciation feedback is based on actual audio processing.
+13. Progress is saved in the database.
+14. The assistant page is independent.
+15. The circular avatar has only eyes and a mouth.
+16. The mouth moves only when speech audio is playing.
+17. Gemini responds through the real backend.
+18. The assistant can answer outside English-learning topics.
+19. PDF retrieval works.
+20. External research works when configured.
+21. API keys are never exposed.
+22. No fake student data is shown.
+23. Mobile layouts work correctly.
+24. Deployment is verified.
+
+Provide screenshots of the actual implementation.
+
+Clearly distinguish completed features from features awaiting credentials or external configuration.
+
+---
+
+25. IMPLEMENTATION PHASES
+
+Work in the following order:
+
+Phase 1:
+Audit the repository and identify missing resources.
+
+Phase 2:
+Verify and ingest the actual PDF.
+
+Phase 3:
+Establish the MAHARAH design system.
+
+Phase 4:
+Implement the first-visit-only welcome experience.
+
+Phase 5:
+Build the lesson-selection interface.
+
+Phase 6:
+Implement study-duration selection and intelligent activity distribution.
+
+Phase 7:
+Implement the exercise engine.
+
+Phase 8:
+Implement real microphone capture, speech recognition, and pronunciation feedback.
+
+Phase 9:
+Build the separate AI assistant page with the circular face.
+
+Phase 10:
+Integrate Gemini securely.
+
+Phase 11:
+Connect PDF retrieval and internet research.
+
+Phase 12:
+Implement persistence, authentication, and real student data.
+
+Phase 13:
+Test, optimize, and deploy.
+
+Do not replace unfinished functionality with decorative mockups.
+
+Do not skip testing.
+
+Do not claim completion without evidence.
+
+---
+
+FINAL PRODUCT VISION
+
+MAHARAH must feel like a premium, carefully engineered educational application.
+
+The student should never feel lost.
+
+The learning process should be simple:
+
+First visit:
+Welcome → Start learning.
+
+Returning visit:
+Learning home → Choose a real lesson → Choose study duration → Begin interactive learning.
+
+For AI assistance:
+Open the separate assistant page → Ask anything → Receive a genuine Gemini-powered response.
+
+The assistant must have a minimal circular face with eyes and a mouth, without a body or emotional personality.
+
+The learning experience must use real curriculum content, real speech recognition, real Gemini responses, real database persistence, and real student interactions.
+
+The visual design must be refined, white and icy, with premium glass effects inspired by Apple's design philosophy.
+
+Build a real product. Never substitute fake functionality, fake data, or decorative controls for actual working features.

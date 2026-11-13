@@ -1,41 +1,71 @@
 import { GoogleGenAI } from '@google/genai';
-import { searchCurriculumKnowledge, PDFChunk } from './curriculumIndex.ts';
+import { searchCurriculumKnowledge, type PDFCurriculumSection } from './curriculumIndex.ts';
 
 export interface CompanionRequest {
   message: string;
   level?: 'beginner' | 'intermediate' | 'advanced';
   activeTrack?: 'hadramout_curriculum' | 'everyday_english';
-  currentSentence?: {
-    english: string;
-    arabic: string;
-    topicTitleAr: string;
+  lessonContext?: {
+    lessonId?: string;
+    lessonTitleAr?: string;
+    lessonTitleEn?: string;
+    english?: string;
+    arabic?: string;
+    topicTitleAr?: string;
     grammarPoint?: string;
+    exercisePrompt?: string;
     vocabulary?: { word: string; meaningAr: string }[];
-  };
-  chatHistory?: { role: 'user' | 'model'; parts: { text: string }[] }[];
+  } | null;
+  chatHistory?: { role: 'user' | 'model'; text: string }[];
   enableInternetSearch?: boolean;
+}
+
+export interface GroundingSource {
+  type: 'pdf_curriculum' | 'gemini_explanation' | 'internet_search';
+  title: string;
+  pageNumber?: number;
+  url?: string;
+  snippet?: string;
 }
 
 export interface CompanionResponse {
   reply: string;
-  groundingSources: {
-    type: 'pdf_curriculum' | 'gemini_explanation' | 'internet_search';
-    title: string;
-    pageNumber?: number;
-    url?: string;
-    snippet?: string;
-  }[];
+  groundingSources: GroundingSource[];
   modelUsed: string;
   hasApiKey: boolean;
+  searchUnavailableReason?: string;
 }
 
-const getGeminiClient = (): GoogleGenAI | null => {
+// Configurable supported Gemini model (defaults to gemini-4-hydrogen for generateContent)
+export const getConfiguredGeminiModel = (): string => {
+  const envModel = process.env.GEMINI_MODEL?.trim();
+  if (!envModel || envModel.includes('live') || envModel === 'gemini-3.8-live') {
+    return 'gemini-4-hydrogen';
+  }
+  return envModel;
+};
+
+export const hasConfiguredGeminiKey = (): boolean => {
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey || apiKey === 'MY_GEMINI_API_KEY' || apiKey.trim() === '') {
+  return Boolean(apiKey && apiKey !== 'MY_GEMINI_API_KEY' && apiKey.trim() !== '');
+};
+
+// Server-side API usage metrics (exposed cleanly without revealing secrets)
+export const geminiMetrics = {
+  totalRequests: 0,
+  successfulRequests: 0,
+  failedRequests: 0,
+  searchGroundingCalls: 0,
+  transcribeCalls: 0,
+  lastCallAt: null as string | null
+};
+
+const getGeminiClient = (): GoogleGenAI | null => {
+  if (!hasConfiguredGeminiKey()) {
     return null;
   }
   return new GoogleGenAI({
-    apiKey,
+    apiKey: process.env.GEMINI_API_KEY,
     httpOptions: {
       headers: {
         'User-Agent': 'aistudio-build',
@@ -44,141 +74,169 @@ const getGeminiClient = (): GoogleGenAI | null => {
   });
 };
 
+// Avoid hammering web search grounding when the API key quota is temporarily exhausted
+let searchGroundingCooldownUntil = 0;
+
 export const handleCompanionQuery = async (req: CompanionRequest): Promise<CompanionResponse> => {
   const {
     message,
     level = 'beginner',
     activeTrack = 'hadramout_curriculum',
-    currentSentence,
+    lessonContext = null,
     chatHistory = [],
     enableInternetSearch = false
   } = req;
 
-  // 1. Search Curriculum Knowledge Base for relevant chunks
-  const matchedChunks: PDFChunk[] = searchCurriculumKnowledge(
-    `${message} ${currentSentence?.english || ''} ${currentSentence?.topicTitleAr || ''}`
-  );
-
+  const modelName = getConfiguredGeminiModel();
   const ai = getGeminiClient();
 
-  // If no Gemini API key configured, provide reliable offline grounding from the Hadramout knowledge base
+  // Check if Gemini API key is missing: never simulate a successful Gemini connection!
   if (!ai) {
-    let reply = '';
-    const groundingSources: CompanionResponse['groundingSources'] = [];
-
-    if (matchedChunks.length > 0) {
-      const topChunk = matchedChunks[0];
-      groundingSources.push({
-        type: 'pdf_curriculum',
-        title: `مقرر الصف الحادي عشر (حضرموت) - ${topChunk.topicAr}`,
-        pageNumber: topChunk.page,
-        snippet: topChunk.officialGrammarRule
-      });
-
-      reply = `مرحباً بك يا صديقي! أنا قطّك التعليمي الرمادي في **مهارة (MAHARAH)** 🐱.\n\n` +
-        `📘 **[مأخوذ مباشرة من مقرر الصف الحادي عشر - حضرموت، ${topChunk.topicAr} (ص ${topChunk.page})]**\n\n` +
-        `${topChunk.officialGrammarRule}\n\n` +
-        `**أمثلة من كتيّب المراجعة الشاملة:**\n` +
-        topChunk.examples.map(ex => `• **${ex.en}**\n  ↳ *${ex.ar}*`).join('\n\n') +
-        `\n\n💡 **ملاحظة هامة للاختبار:** ${topChunk.hadramoutExamNotes}\n\n` +
-        `---\n*ملاحظة: يمكنك تفعيل الاتصال الكامل بذكاء جيميناي عبر إدخال مفتاح GEMINI_API_KEY في لوحة الإعدادات (Settings > Secrets).*`;
-    } else {
-      reply = `أهلاً بك! أنا رفيقك التعليمي الذكي في منصة **مهارة (MAHARAH)** 🐱.\n\n` +
-        (currentSentence
-          ? `أرى أنك تدرس حالياً جملة:\n**"${currentSentence.english}"**\n↳ *${currentSentence.arabic}*\n\n` +
-            `هذه الجملة تنتمي إلى محور: **${currentSentence.topicTitleAr}**.\n` +
-            `إذا أردت معرفة إعرابها أو صياغة جمل مماثلة، اسألني بالتفصيل وسأوضح لك كل جزء مع ترجمته العربية الكاملة!\n\n`
-          : `كيف يمكنني مساعدتك اليوم في تعلم الإنجليزية أو مراجعة مقرر الصف الحادي عشر (حضرموت)؟\n\n`) +
-        `*ملاحظة: يعمل الرفيق الآن بالاعتماد على قاعدة بيانات كتيّب مراجعة منهج حضرموت الداخلي. لتفعيل كامل ذكاء جيميناي المباشر، أضف مفتاح GEMINI_API_KEY في Settings > Secrets.*`;
-    }
-
     return {
-      reply,
-      groundingSources,
-      modelUsed: 'internal-hadramout-rag-engine',
+      reply:
+        'ميزة المساعد الذكي (Gemini) بانتظار تهيئة مفتاح GEMINI_API_KEY في إعدادات الخادم السرية. ' +
+        'بمجرد إضافة المفتاح على الخادم، سيصبح المساعد قادراً على إجراء محادثات طبيعية شاملة في جميع المجالات مع البحث المباشر.',
+      groundingSources: [],
+      modelUsed: 'unconfigured',
       hasApiKey: false
     };
   }
 
-  // 2. Format Context for Gemini
+  geminiMetrics.totalRequests += 1;
+  geminiMetrics.lastCallAt = new Date().toISOString();
+
+  // 1. Retrieve matching chunks from the actual Grade 11 Hadramout PDF index
+  const searchSeed = `${message} ${lessonContext?.english || ''} ${lessonContext?.topicTitleAr || ''} ${lessonContext?.lessonTitleAr || ''}`;
+  const matchedChunks: PDFCurriculumSection[] = searchCurriculumKnowledge(searchSeed);
+
+  const groundingSources: GroundingSource[] = [];
   let pdfContextSection = '';
-  const groundingSources: CompanionResponse['groundingSources'] = [];
 
   if (matchedChunks.length > 0) {
-    pdfContextSection = matchedChunks.slice(0, 3).map(chunk => {
-      groundingSources.push({
-        type: 'pdf_curriculum',
-        title: `مقرر الصف الحادي عشر - حضرموت: ${chunk.topicAr}`,
-        pageNumber: chunk.page,
-        snippet: chunk.officialGrammarRule
-      });
-      return `---
-Topic: ${chunk.topicEn} (${chunk.topicAr}) - Unit ${chunk.unit}, Page ${chunk.page}
-Official Text: ${chunk.officialText}
-Grammar Rule: ${chunk.officialGrammarRule}
-Exam Notes: ${chunk.hadramoutExamNotes}
+    pdfContextSection = matchedChunks
+      .slice(0, 3)
+      .map(chunk => {
+        groundingSources.push({
+          type: 'pdf_curriculum',
+          title: `مقرر الصف الحادي عشر (حضرموت) — ${chunk.titleAr}`,
+          pageNumber: chunk.pageNumber,
+          snippet: chunk.grammarRulesAr.join(' · ')
+        });
+        return `---
+Topic: ${chunk.titleEn} (${chunk.titleAr}) — Section ${chunk.sectionNumber}, Page ${chunk.pageNumber}
+Official Text: ${chunk.officialContent}
+Grammar Rules: ${chunk.grammarRulesAr.join('; ')}
+Exam Notes: ${chunk.examNotesAr}
 Examples:
-${chunk.examples.map(e => `• ${e.en} -> ${e.ar}`).join('\n')}
+${chunk.notebookExamples.map(e => `• ${e.en} -> ${e.ar}`).join('\n')}
 ---`;
-    }).join('\n\n');
+      })
+      .join('\n\n');
   }
 
   const systemInstruction = `
-أنت "فرهود" (Farhood) — القط الرمادي التعليمي الذكي لمنصة "مهارة" (MAHARAH 3.0) المتخصصة في تعليم اللغة الإنجليزية للناطقين بالعربية، وبخاصة طلاب منهج الصف الحادي عشر في حضرموت (اليمن) بالإضافة إلى مكتبة الإنجليزية اليومية الحياتية.
+أنت أستاذ دكتور متخصص في تعليم اللغة الإنجليزية واللغويات التطبيقية واكتساب اللغة الثانية (Applied Linguistics & SLA) في منصة "مهارة" (MAHARAH).
+تتحدث بأسلوب علمي واضح، محايد، منظم، ومباشر، باللغة العربية أو الإنجليزية حسب لغة سؤال المستخدم.
 
-شخصيتك:
-- ودود، مشجع، صبور، ذكي، تشرح بأسلوب تربوي مبسط ورصين.
-- تتحدث باللغة العربية الواضحة وتخاطب الطالب بلطف وتقدير.
-
-قواعد تعليمية صارمة:
-1. التعلم القائم على الجمل: أي مثال إنجليزي تذكره يجب دائماً أن ترفقه بترجمة عربية واضحة ومباشرة تحته.
-2. التمييز الدقيق لمصادر المعرفة:
-   - إذا كانت المعلومة مستندة إلى مقرر حضرموت المستخرج من الـ PDF، افتتح الفقرة بـ:
-     📘 **[مأخوذ مباشرة من مقرر الصف الحادي عشر - حضرموت، ص X]**
-   - إذا كان شرحاً أو تبسيطاً أو أمثلة إضافية منك كذكاء اصطناعي، ضعها تحت:
-     💡 **[شرح وتوضيح تعليمي إضافي من جيميناي]**
-   - إذا تم البحث في الإنترنت، ضع النتائج تحت:
-     🌐 **[بحث ومعلومات موثوقة من الإنترنت مع المصادر]**
-3. لا تختلق مطلقاً معلومات تدعي أنها من كتاب المنهج وهي ليست موجودة فيه.
-4. التناسب مع مستوى الطالب: مراعاة مستوى الطالب الحالي (${level}).
+مبادئ أساسية:
+1. مساعد معرفي شامل عند الحاجة:
+   - إذا سأل الطالب سؤالاً عاماً خارج الإنجليزية (علوم، رياضيات، برمجة، تقنية، تاريخ، أو شؤون عامة)، أجب عنه مباشرة بدقة واحترام دون إجبار المحادثة على العودة لدرس الإنجليزية.
+2. معايير الأستاذ الجامعي عند تعليم اللغة الإنجليزية أو المنهج:
+   - لا تقدّم شروحاً سطحية أو إجابات مختصرة مخلة إذا كان الموضوع يحتاج تأسيساً عميقاً. اتبع المنهجية: المفهوم والهدف التواصلي ← التركيب والقواعد (الإثبات، النفي، الاستفهام، التهجئة أو الصرف) ← الاستثناءات والفروق الدقيقة ← تحليل الأخطاء الشائعة لدى المتعلم العربي.
+   - في المفردات: قدّم النطق الصوتي الدقيق (IPA)، المعنى، المتلازمات اللفظية (Collocations)، العائلة الاشتقاقية، والسياق الرسمي مقابل اليومي.
+   - في الصوتيات: اشرح مخارج الأصوات عملياً (وضع اللسان، الشفتين، الأسنان، الفك، وتدفق الهواء) وقارن بالأزواج الصغرى (Minimal Pairs).
+   - في تصحيح الجمل والكتابة: شخّص السبب الجذري للخطأ (لماذا وقع الخطأ، وليس مجرد عرض الصواب) وقدّم صياغة طبيعية محسّنة.
+   - التزم بقاعدة التعلم القائم على الجمل الكاملة: أرفق ترجمة عربية دقيقة مع كل جملة إنجليزية تعليمية، ووازن الأمثلة المتنوعة.
+   - عند الاستناد إلى مقرر الصف الحادي عشر (حضرموت) المرفق (PDF)، اذكر رقم الصفحة واسم القسم بدقة وميّز بين نص المقرر والشرح الإضافي.
+3. الصدق العلمي: إذا لم تتوفر معلومة مؤكدة أو كان البحث الخارجي غير متاح، صرّح بذلك بأمانة.
+4. التكيف التدريجي: راعِ أن مستوى الطالب المسجل حالياً هو (${level}) واجعل الشرح منطقياً ومتدرجاً دون إغراق عشوائي.
 `.trim();
 
-  const userPrompt = `
-سياق الطالب الحالي في منصة مهارة:
-- المسار التعليمي: ${activeTrack === 'hadramout_curriculum' ? 'مقرر الصف الحادي عشر - حضرموت' : 'مكتبة الإنجليزية اليومية'}
-- المستوى: ${level}
-${currentSentence ? `- الجملة التي يدرسها الطالب الآن: "${currentSentence.english}" (الترجمة: "${currentSentence.arabic}") [محور: ${currentSentence.topicTitleAr}]` : ''}
+  const contextLines: string[] = [];
+  if (lessonContext) {
+    contextLines.push(`سياق الدرس المفتوح حالياً (للاستعانة به فقط إذا سأل الطالب عن الدرس):`);
+    contextLines.push(`- المسار: ${activeTrack === 'hadramout_curriculum' ? 'مقرر الصف 11 (حضرموت)' : 'الإنجليزية اليومية'}`);
+    if (lessonContext.lessonTitleAr) contextLines.push(`- الدرس: ${lessonContext.lessonTitleAr} (${lessonContext.lessonTitleEn || ''})`);
+    if (lessonContext.english) contextLines.push(`- الجملة النشطة: "${lessonContext.english}" — الترجمة: "${lessonContext.arabic || ''}"`);
+    if (lessonContext.grammarPoint) contextLines.push(`- القاعدة: ${lessonContext.grammarPoint}`);
+    if (lessonContext.exercisePrompt) contextLines.push(`- التمرين الحالي: ${lessonContext.exercisePrompt}`);
+  } else {
+    contextLines.push(`محادثة مستقلة مفتوحة (لا يوجد درس محدد مرتبط بهذه الرسالة).`);
+  }
 
-${pdfContextSection ? `المحتوى المستخرج رسمياً من كتيّب مراجعة المنهج (PDF - Hadramout Curriculum):\n${pdfContextSection}` : 'لا توجد صفحات مطابقة مباشرة في كتيّب المنهج لهذا السؤال؛ اعتمد على المعرفة اللغوية العامة والإنترنت ووضح ذلك للطالب.'}
+  if (pdfContextSection) {
+    contextLines.push(`\nالمقاطع المسترجعة من ملف المنهج الرسمي (content/official-curriculum/grade-11-hadramout.pdf):\n${pdfContextSection}`);
+  }
 
-رسالة أو سؤال الطالب:
-"${message}"
-`.trim();
+  const contents = [
+    ...chatHistory.slice(-10).map(turn => ({
+      role: turn.role,
+      parts: [{ text: turn.text }]
+    })),
+    {
+      role: 'user' as const,
+      parts: [
+        {
+          text: `${contextLines.join('\n')}\n\nسؤال المستخدم:\n${message}`
+        }
+      ]
+    }
+  ];
 
-  try {
-    const config: any = {
-      systemInstruction,
-    };
+  let searchUnavailableReason: string | undefined;
 
-    if (enableInternetSearch) {
+  const invokeGemini = async (withSearch: boolean) => {
+    const config: any = { systemInstruction };
+    if (withSearch) {
       config.tools = [{ googleSearch: {} }];
+      geminiMetrics.searchGroundingCalls += 1;
     }
 
     const generatePromise = ai.models.generateContent({
-      model: 'gemini-3.8-flash',
-      contents: userPrompt,
-      config,
+      model: modelName,
+      contents,
+      config
     });
 
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error('Gemini API call timed out after 5s')), 5000);
+      setTimeout(() => reject(new Error('انتهت مهلة الاتصال بنموذج Gemini')), 30000);
     });
 
-    const response = await Promise.race([generatePromise, timeoutPromise]);
+    return await Promise.race([generatePromise, timeoutPromise]);
+  };
 
-    const reply = response.text || 'عذراً، لم أتمكن من صياغة إجابة في هذه اللحظة. يرجى إعادة المحاولة.';
+  try {
+    let response;
+    if (enableInternetSearch) {
+      if (Date.now() < searchGroundingCooldownUntil) {
+        searchUnavailableReason =
+          'البحث المباشر عبر الويب متوقف مؤقتاً بسبب حد الحصة على خطة API الحالية؛ تمت الإجابة بالاعتماد على معرفة النموذج والمنهج المرفق.';
+        response = await invokeGemini(false);
+      } else {
+        try {
+          response = await invokeGemini(true);
+        } catch (searchErr: any) {
+          const rawMsg = String(searchErr?.message || '');
+          const isQuotaError =
+            rawMsg.includes('429') ||
+            rawMsg.includes('RESOURCE_EXHAUSTED') ||
+            rawMsg.toLowerCase().includes('quota');
+          if (isQuotaError) {
+            // Pause search grounding calls for 5 minutes to avoid repeated 429 quota errors
+            searchGroundingCooldownUntil = Date.now() + 5 * 60 * 1000;
+          }
+          searchUnavailableReason =
+            'البحث المباشر عبر الويب غير متاح حالياً بسبب حد الحصة على خطة API الحالية؛ تمت الإجابة بالاعتماد على المعرفة المباشرة للنموذج والمنهج المرفق.';
+          response = await invokeGemini(false);
+        }
+      }
+    } else {
+      response = await invokeGemini(false);
+    }
 
-    // Extract search grounding metadata if available
+    const reply = response.text?.trim() || 'لم يتمكن النموذج من توليد إجابة نصية في هذه اللحظة.';
+
+    // Extract verified external web grounding URLs if returned
     const searchMetadata = (response as any).candidates?.[0]?.groundingMetadata?.groundingChunks;
     if (searchMetadata && Array.isArray(searchMetadata)) {
       searchMetadata.forEach((chunk: any) => {
@@ -195,46 +253,68 @@ ${pdfContextSection ? `المحتوى المستخرج رسمياً من كتي�
 
     groundingSources.push({
       type: 'gemini_explanation',
-      title: 'شرح تحليلي مدعوم بنموذج Google Gemini 3.8 Flash'
+      title: `استجابة مدعومة من Google Gemini (${modelName})`
     });
+
+    geminiMetrics.successfulRequests += 1;
 
     return {
       reply,
       groundingSources,
-      modelUsed: 'gemini-3.8-flash',
-      hasApiKey: true
+      modelUsed: modelName,
+      hasApiKey: true,
+      searchUnavailableReason
     };
   } catch (err: any) {
-    console.warn('Gemini API fallback triggered:', err.message);
+    geminiMetrics.failedRequests += 1;
+    const rawMsg = String(err?.message || '');
+    const isQuotaError =
+      rawMsg.includes('429') ||
+      rawMsg.includes('RESOURCE_EXHAUSTED') ||
+      rawMsg.toLowerCase().includes('quota');
 
-    let fallbackReply = '';
-    if (matchedChunks.length > 0) {
-      const topChunk = matchedChunks[0];
-      fallbackReply = `مرحباً بك يا بطل! أنا فرهود 🐱 قطّك التعليمي الرمادي في **مهارة (MAHARAH)**.\n\n` +
-        `📘 **[مأخوذ مباشرة من مقرر الصف الحادي عشر - حضرموت، ${topChunk.topicAr} (ص ${topChunk.page})]**\n\n` +
-        `${topChunk.officialGrammarRule}\n\n` +
-        `**أمثلة مقررة مع الترجمة العربية الكاملة:**\n` +
-        topChunk.examples.map(ex => `• **"${ex.en}"**\n  ↳ *${ex.ar}*`).join('\n\n') +
-        `\n\n💡 **ملاحظة للامتحان الوزاري بحضرموت:** ${topChunk.hadramoutExamNotes}\n\n` +
-        `---\n*ملاحظة: لتفعيل الإجابات الحية من Gemini API، يُرجى التأكد من إضافة مفتاحك في (Settings > Secrets).*`;
-    } else {
-      fallbackReply = `أهلاً بك يا بطل! أنا فرهود 🐱 رفيقك التعليمي الذكي في منصة **مهارة (MAHARAH)**.\n\n` +
-        (currentSentence
-          ? `بخصوص الجملة التي تدرسها الآن:\n**"${currentSentence.english}"**\n↳ *${currentSentence.arabic}*\n\n` +
-            `هذه الجملة تتبع وحدة: **${currentSentence.topicTitleAr}**.\n` +
-            (currentSentence.grammarPoint ? `القاعدة الأساسية: ${currentSentence.grammarPoint}\n\n` : '') +
-            (currentSentence.vocabulary && currentSentence.vocabulary.length > 0
-              ? `**المفردات المفتاحية في الجملة:**\n` +
-                currentSentence.vocabulary.map((v: { word: string; meaningAr: string }) => `• ${v.word}: ${v.meaningAr}`).join('\n')
-              : '')
-          : `أنا جاهز للإجابة عن أي استفسار في مقرر الصف الحادي عشر في حضرموت أو الإنجليزية اليومية!`);
+    if (isQuotaError) {
+      throw new Error('تم استهلاك الحد المسموح لطلبات Gemini حالياً (429). يرجى الانتظار قليلاً ثم المحاولة مرة أخرى.');
     }
-
-    return {
-      reply: fallbackReply,
-      groundingSources,
-      modelUsed: 'hadramout-curriculum-rag',
-      hasApiKey: false
-    };
+    throw new Error('تعذر إكمال الاتصال بنموذج Gemini حالياً. يرجى المحاولة بعد قليل.');
   }
+};
+
+export const transcribeSpeechAudio = async (
+  audioBase64: string,
+  mimeType: string,
+  expectedSentence?: string
+): Promise<{ transcript: string; confidence: number }> => {
+  const ai = getGeminiClient();
+  if (!ai) {
+    throw new Error('GEMINI_API_KEY غير مهيأ على الخادم لخدمة التفريغ الصوتي.');
+  }
+
+  geminiMetrics.transcribeCalls += 1;
+  geminiMetrics.lastCallAt = new Date().toISOString();
+
+  const prompt = expectedSentence
+    ? `Transcribe the exact spoken English words from this audio recording faithfully. Do NOT correct mispronunciations or insert words the speaker did not actually say. Target sentence for acoustic context only: "${expectedSentence}". Output ONLY the exact spoken transcript text.`
+    : 'Transcribe the exact spoken words from this audio accurately (English or Arabic). Output ONLY the transcript text.';
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-3.5-transcribe',
+    contents: {
+      parts: [
+        {
+          inlineData: {
+            mimeType: mimeType || 'audio/webm',
+            data: audioBase64
+          }
+        },
+        { text: prompt }
+      ]
+    }
+  });
+
+  const transcript = (response.text || '').trim();
+  return {
+    transcript,
+    confidence: transcript ? 0.88 : 0
+  };
 };

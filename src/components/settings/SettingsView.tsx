@@ -1,115 +1,179 @@
 import React, { useState, useEffect } from 'react';
 import {
   Settings,
-  ShieldCheck,
-  Key,
   GraduationCap,
   Sparkles,
   RotateCcw,
   CheckCircle2,
   AlertCircle,
-  ExternalLink,
-  BookOpen
+  Eye
 } from 'lucide-react';
-import { useSession, DURATION_OPTIONS } from '../../context/SessionContext.tsx';
-import { saveUserProgress } from '../../services/storageService.ts';
+import { useSession } from '../../context/SessionContext.tsx';
+import { DURATION_OPTIONS } from '../../services/sessionPlanner.ts';
+import { CEFR_LEVEL_SPECS } from '../../data/cefrCurriculumData.ts';
+import { SKILL_DOMAIN_LABELS_AR, SkillDomain } from '../../services/storageService.ts';
 
 export const SettingsView: React.FC = () => {
-  const { progress, setLevel, selectedDurationMinutes, setSelectedDurationMinutes } = useSession();
+  const {
+    progress,
+    setLevel,
+    setCefrLevel,
+    selectedDurationMinutes,
+    setSelectedDurationMinutes,
+    resetOnboardingView,
+    resetAllProgress
+  } = useSession();
+
   const [systemStatus, setSystemStatus] = useState<{
     hasApiKey: boolean;
     model: string;
     curriculumUnitsCount: number;
   } | null>(null);
+  const [confirmReset, setConfirmReset] = useState(false);
+  const [resetDoneNotice, setResetDoneNotice] = useState(false);
 
   useEffect(() => {
     fetch('/api/system/status')
       .then(res => res.json())
       .then(data => setSystemStatus(data))
-      .catch(err => console.error('Status fetch error:', err));
+      .catch(() => {});
   }, []);
 
-  const handleResetProgress = () => {
-    if (window.confirm('هل أنت متأكد من رغبتك في إعادة ضبط تقدمك التعليمي والبدء من جديد؟')) {
-      const fresh = {
-        level: 'beginner' as const,
-        selectedDurationMinutes: 20,
-        activeTrack: 'hadramout_curriculum' as const,
-        completedSentenceIds: [],
-        savedSentenceIds: [],
-        totalExercisesCompleted: 0,
-        correctExercisesCount: 0,
-        reviewDeck: [],
-        currentSession: null
-      };
-      saveUserProgress(fresh);
-      window.location.reload();
-    }
+  const handleConfirmReset = () => {
+    resetAllProgress();
+    setConfirmReset(false);
+    setResetDoneNotice(true);
+    setTimeout(() => setResetDoneNotice(false), 3000);
   };
 
   return (
-    <div className="max-w-3xl mx-auto py-6 px-4 sm:px-6" dir="rtl">
-      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200/80 shadow-xs mb-8 text-right">
-        <div className="flex items-center gap-3 mb-6 border-b border-stone-100 pb-4">
-          <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-900 flex items-center justify-center font-bold">
+    <div className="max-w-3xl mx-auto py-8 px-4 sm:px-6 space-y-6" dir="rtl">
+      <div className="surface-card rounded-3xl p-6 sm:p-8 text-right space-y-8">
+        {/* Header */}
+        <div className="flex items-center gap-3.5 border-b border-slate-100 pb-5">
+          <div className="w-11 h-11 rounded-2xl surface-icy text-sky-700 flex items-center justify-center shrink-0">
             <Settings className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-xl sm:text-2xl font-extrabold text-stone-900">
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900">
               إعدادات منصة مهارة (MAHARAH)
             </h1>
-            <p className="text-xs text-stone-500">
-              تخصيص مستوى التعلم، تهيئة الذكاء الاصطناعي، وإدارة تقدمك
+            <p className="text-xs text-slate-500 mt-0.5">
+              تخصيص المستوى الإطاري CEFR، مدة الجلسة المفضلة، وتقييم إتقان المهارات اللغوية
             </p>
           </div>
         </div>
 
-        {/* 1. Level Selection */}
-        <div className="mb-8">
-          <h2 className="text-sm font-bold text-stone-900 mb-2 flex items-center gap-2">
-            <GraduationCap className="w-4 h-4 text-amber-600" />
-            المستوى الدراسي المستهدف
+        {/* 1. CEFR + Track Level Selection */}
+        <div className="space-y-4">
+          <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+            <GraduationCap className="w-4 h-4 text-sky-600" />
+            <span>المستوى الإطاري المستهدف (CEFR A1–C2)</span>
           </h2>
-          <p className="text-xs text-stone-500 mb-4">
-            تتغير صعوبة الجمل، القواعد، وسرعة النطق الصوتي وفقاً لمستواك المختار:
+          <p className="text-xs text-slate-500">
+            يُكيّف هذا الاختيار عمق الشرح النحوي، مستوى المفردات، وتحديات الكتابة والمحادثة:
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+            {CEFR_LEVEL_SPECS.map(spec => (
+              <button
+                key={spec.code}
+                type="button"
+                onClick={() => setCefrLevel(spec.code)}
+                className={`p-3.5 rounded-2xl border text-right transition-colors ${
+                  progress.cefrLevel === spec.code
+                    ? 'border-sky-600 bg-[#F0F7FA] text-slate-900 font-semibold'
+                    : 'border-slate-200 bg-white hover:border-sky-200 text-slate-800'
+                }`}
+              >
+                <span className="block text-sm">{spec.titleAr}</span>
+                <span className="block text-[11px] text-slate-500 mt-1 font-normal line-clamp-2">
+                  {spec.outcomesAr.grammar}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
             {[
-              { id: 'beginner' as const, title: 'المبتدئ (Beginner)', desc: 'جمل أساسية، تراكيب مباشرة، نطق هادئ وتوضيحي' },
-              { id: 'intermediate' as const, title: 'المتوسط (Intermediate)', desc: 'قواعد منهج حضرموت، المبني للمجهول، والجمل المركبة' },
-              { id: 'advanced' as const, title: 'المتقدم (Advanced)', desc: 'تراكيب دقيقة، مصطلحات جنائية وطبية، ونطق طبيعي سريع' }
+              {
+                id: 'beginner' as const,
+                title: 'المبتدئ (Beginner)',
+                desc: 'جمل أساسية، تراكيب مباشرة، ونطق هادئ واضح'
+              },
+              {
+                id: 'intermediate' as const,
+                title: 'المتوسط (Intermediate)',
+                desc: 'قواعد منهج حضرموت، المبني للمجهول، والجمل المركبة'
+              },
+              {
+                id: 'advanced' as const,
+                title: 'المتقدم (Advanced)',
+                desc: 'تراكيب دقيقة، مصطلحات علمية وطبية، ونطق طبيعي'
+              }
             ].map(lvl => (
               <button
                 key={lvl.id}
+                type="button"
                 onClick={() => setLevel(lvl.id)}
-                className={`p-4 rounded-2xl border text-right transition-all ${
+                className={`p-3.5 rounded-2xl border text-right transition-colors ${
                   progress.level === lvl.id
-                    ? 'border-amber-600 bg-amber-50/70 shadow-xs ring-1 ring-amber-500 text-amber-950 font-bold'
-                    : 'border-stone-200 bg-white hover:bg-stone-50 text-stone-800'
+                    ? 'border-slate-900 bg-slate-900 text-white font-semibold'
+                    : 'border-slate-200 bg-white hover:border-sky-200 text-slate-800'
                 }`}
               >
-                <span className="block text-sm">{lvl.title}</span>
-                <span className="block text-[11px] text-stone-500 mt-1 font-normal leading-relaxed">{lvl.desc}</span>
+                <span className="block text-xs">{lvl.title}</span>
               </button>
             ))}
           </div>
         </div>
 
+        {/* 1.5 Genuine 7-Domain Skill Mastery Telemetry */}
+        <div className="pt-6 border-t border-slate-100 space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-sm font-bold text-slate-900">تقييم إتقان المهارات اللغوية السبع</h2>
+            <span className="text-[11px] text-slate-500">يُحتسب فقط من التمارين والاختبارات المُقيّمة فعلياً</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {(Object.keys(SKILL_DOMAIN_LABELS_AR) as SkillDomain[]).map(domain => {
+              const stat = progress.skillMastery[domain];
+              const hasData = stat && stat.attempts > 0;
+              return (
+                <div
+                  key={domain}
+                  className="p-3.5 rounded-2xl border border-slate-200/80 bg-[#F0F7FA]/45 space-y-2 text-xs"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-bold text-slate-900">{SKILL_DOMAIN_LABELS_AR[domain]}</span>
+                    <span className="font-numeric text-slate-600">
+                      {hasData ? `${stat.masteryPercent}% (${stat.correct}/${stat.attempts})` : 'لم يُقيّم بعد'}
+                    </span>
+                  </div>
+                  <div className="w-full h-1.5 bg-white rounded-full overflow-hidden border border-slate-200/60">
+                    <div
+                      className="h-full bg-sky-600 transition-all"
+                      style={{ width: `${hasData ? stat.masteryPercent : 0}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         {/* 2. Default Duration Preference */}
-        <div className="mb-8 pt-6 border-t border-stone-100">
-          <h2 className="text-sm font-bold text-stone-900 mb-2">
-            المدة الافتراضية للجلسة اليومية
-          </h2>
-          <div className="flex flex-wrap gap-2 mt-3">
+        <div className="pt-6 border-t border-slate-100 space-y-3">
+          <h2 className="text-sm font-bold text-slate-900">المدة الافتراضية لجلسة التعلم</h2>
+          <div className="flex flex-wrap gap-2">
             {DURATION_OPTIONS.map(mins => (
               <button
                 key={mins}
+                type="button"
                 onClick={() => setSelectedDurationMinutes(mins)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold font-latin transition-all ${
+                className={`px-3.5 py-2 rounded-xl text-xs font-semibold font-numeric transition-colors ${
                   selectedDurationMinutes === mins
-                    ? 'bg-amber-600 text-white shadow-xs'
-                    : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                    ? 'bg-slate-900 text-white'
+                    : 'bg-[#F0F7FA] text-slate-700 hover:bg-sky-100'
                 }`}
               >
                 {mins} دقيقة
@@ -118,66 +182,106 @@ export const SettingsView: React.FC = () => {
           </div>
         </div>
 
-        {/* 3. Gemini AI Configuration & Security */}
-        <div className="mb-8 pt-6 border-t border-stone-100">
-          <div className="flex items-center justify-between gap-2 mb-3">
-            <h2 className="text-sm font-bold text-stone-900 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-amber-600" />
-              تكامل الذكاء الاصطناعي (Google Gemini 3.8 Flash)
+        {/* 3. Server AI Status (Read-Only) */}
+        <div className="pt-6 border-t border-slate-100 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-sky-600" />
+              <span>حالة المساعد الذكي والمنهج</span>
             </h2>
             <span
-              className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 ${
-                systemStatus?.hasApiKey
-                  ? 'bg-emerald-100 text-emerald-800'
-                  : 'bg-amber-100 text-amber-800'
+              className={`text-xs font-semibold flex items-center gap-1.5 ${
+                systemStatus?.hasApiKey ? 'text-emerald-700' : 'text-amber-700'
               }`}
             >
               {systemStatus?.hasApiKey ? (
                 <>
-                  <CheckCircle2 className="w-3 h-3" />
-                  مفتاح جيميناي مفعل
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>متصل وجاهز على الخادم</span>
                 </>
               ) : (
                 <>
-                  <AlertCircle className="w-3 h-3" />
-                  يعمل بالوضع الداخلي المنهجي
+                  <AlertCircle className="w-4 h-4" />
+                  <span>بانتظار التهيئة على الخادم</span>
                 </>
               )}
             </span>
           </div>
 
-          <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200 text-xs text-stone-700 space-y-3 leading-relaxed">
+          <div className="surface-icy rounded-2xl p-4 text-xs text-slate-700 space-y-2 leading-relaxed">
             <p>
-              🔒 <strong>الأمان والخصوصية:</strong> يتم تشغيل جميع استدعاءات Google Gemini حصرياً عبر الخادم الخلفي الآمن لمنصة مهارة. لا يُكشف مفتاح API مطلقاً لمتصفح المستخدم ولا يوضع في شفرات الواجهة الأمامية.
+              تُدار جميع اتصالات الذكاء الاصطناعي والبحث حصرياً عبر الخادم الخلفي المحمي لمنصة مهارة؛ لا تُحفظ أو تُعرض أي مفاتيح خدمة داخل المتصفح.
             </p>
-            <p>
-              🔑 <strong>كيفية ضبط مفتاحك الخاص:</strong> لربط مفتاحك الشخصي، انتقل إلى لوحة <strong>Settings &gt; Secrets</strong> في شريط أدوات بيئة AI Studio وأضف المتغير بالاسم التالي:
-            </p>
-            <div className="p-2.5 bg-stone-900 text-amber-300 font-mono text-xs rounded-xl text-center" dir="ltr">
-              GEMINI_API_KEY="AIzaSy..."
-            </div>
-            <p className="text-stone-500 text-[11px]">
-              * إذا لم يتم إدخال المفتاح، ستستمر المنصة بالعمل بسلاسة تامة بالاعتماد على محرك الاسترجاع الذاتي المدمج لكتيّب مراجعة منهج حضرموت.
-            </p>
+            {systemStatus && (
+              <p className="text-slate-500 font-numeric">
+                النموذج المفعّل: <span className="font-latin text-slate-800">{systemStatus.model}</span> · أقسام المنهج المتوفرة: {systemStatus.curriculumUnitsCount}
+              </p>
+            )}
           </div>
         </div>
 
-        {/* 4. Statistics & Reset */}
-        <div className="pt-6 border-t border-stone-100 flex flex-wrap items-center justify-between gap-4">
-          <div className="text-xs text-stone-500">
+        {/* 4. Onboarding Replay & Progress Reset */}
+        <div className="pt-6 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4">
+          <div className="text-xs text-slate-600 font-numeric">
             <span>التمارين المكتملة: <strong>{progress.totalExercisesCompleted}</strong></span>
-            <span className="mx-2">•</span>
-            <span>نسبة الصواب: <strong>{progress.totalExercisesCompleted > 0 ? Math.round((progress.correctExercisesCount / progress.totalExercisesCompleted) * 100) : 0}%</strong></span>
+            <span className="mx-2" aria-hidden="true">·</span>
+            <span>
+              نسبة الصواب:{' '}
+              <strong>
+                {progress.totalExercisesCompleted > 0
+                  ? Math.round((progress.correctExercisesCount / progress.totalExercisesCompleted) * 100)
+                  : 0}
+                %
+              </strong>
+            </span>
           </div>
 
-          <button
-            onClick={handleResetProgress}
-            className="px-4 py-2 text-xs font-bold text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-colors flex items-center gap-1.5"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>إعادة ضبط التقدم التعليمي</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <button
+              type="button"
+              onClick={resetOnboardingView}
+              className="px-4 py-2 rounded-xl bg-[#F0F7FA] hover:bg-sky-100 text-slate-800 text-xs font-semibold transition-colors flex items-center gap-1.5"
+            >
+              <Eye className="w-3.5 h-3.5 text-sky-700" />
+              <span>إعادة عرض شاشة الترحيب</span>
+            </button>
+
+            {!confirmReset ? (
+              <button
+                type="button"
+                onClick={() => setConfirmReset(true)}
+                className="px-4 py-2 text-xs font-semibold text-red-700 hover:bg-red-50 rounded-xl border border-red-200/70 transition-colors flex items-center gap-1.5"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>إعادة ضبط التقدم</span>
+              </button>
+            ) : (
+              <div className="flex items-center gap-2 bg-red-50 border border-red-200 px-3 py-1.5 rounded-xl text-xs">
+                <span className="text-red-900 font-medium">تأكيد مسح التقدم المحلي؟</span>
+                <button
+                  type="button"
+                  onClick={handleConfirmReset}
+                  className="px-2.5 py-1 bg-red-600 text-white rounded-lg font-semibold"
+                >
+                  نعم، امسح
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmReset(false)}
+                  className="px-2 py-1 text-slate-600 hover:text-slate-900"
+                >
+                  إلغاء
+                </button>
+              </div>
+            )}
+          </div>
         </div>
+
+        {resetDoneNotice && (
+          <p className="text-xs text-emerald-700 font-medium text-center">
+            تمت إعادة ضبط التقدم المحلي بنجاح.
+          </p>
+        )}
       </div>
     </div>
   );

@@ -1,30 +1,63 @@
 import express from 'express';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import { apiRouter } from './src/server/apiRouter.ts';
 
 dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+function resolvePort(): number {
+  const args = process.argv.slice(2);
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg.startsWith('--port=')) {
+      const parsed = Number(arg.slice('--port='.length));
+      if (!Number.isNaN(parsed) && parsed > 0) return parsed;
+    } else if (arg === '--port' && args[i + 1]) {
+      const parsed = Number(args[i + 1]);
+      if (!Number.isNaN(parsed) && parsed > 0) return parsed;
+    }
+  }
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+  if (process.env.NODE_ENV === 'production') {
+    return Number(process.env.PORT || 3000);
+  }
+  return Number(process.env.DEFAULT_APP_PORT || 3000);
+}
 
-app.use(express.json());
+async function startServer() {
+  const app = express();
+  const PORT = resolvePort();
+  const isProd = process.env.NODE_ENV === 'production';
 
-// API endpoints
-app.use('/api', apiRouter);
+  app.use(express.json({ limit: '10mb' }));
 
-// Serve frontend static files from dist in production
-const distPath = path.join(__dirname, 'dist');
-app.use(express.static(distPath));
+  // Backend API endpoints
+  app.use('/api', apiRouter);
 
-app.get('*', (req, res) => {
-  res.sendFile(path.join(distPath, 'index.html'));
-});
+  if (!isProd) {
+    const { createServer: createViteServer } = await import('vite');
+    const vite = await createViteServer({
+      server: {
+        middlewareMode: true,
+        hmr: process.env.DISABLE_HMR !== 'true',
+      },
+      appType: 'spa',
+    });
+    app.use(vite.middlewares);
+  } else {
+    const distPath = path.resolve(import.meta.dirname, 'dist');
+    app.use(express.static(distPath));
+    app.get('*', (_req, res) => {
+      res.sendFile(path.join(distPath, 'index.html'));
+    });
+  }
 
-app.listen(PORT, () => {
-  console.log(`MAHARAH 3.0 server running on port ${PORT}`);
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`MAHARAH 4.0 server running on http://0.0.0.0:${PORT} (${isProd ? 'production' : 'development'})`);
+  });
+}
+
+startServer().catch(err => {
+  console.error('Failed to start MAHARAH 4.0 server:', err);
+  process.exit(1);
 });
